@@ -1,44 +1,125 @@
 package com.itb.inf2bm.pizzariab.controller;
 
 import com.itb.inf2bm.pizzariab.model.entity.Produto;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.itb.inf2bm.pizzariab.model.services.ProdutoService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+/*
+
+ @RequestBody   : Corpo da Requisição ( Recebendo um objeto JSON )
+ ResponseEntity : Toda resposta HTTP (status, cabeçalhos e corpo, aqui temos mais controle sobre o que é devolvido para o cliemte
+ 1. Status HTTP: (200 ok, 201 CREATED, 404 NOT FOUND etc ...)
+ 2. Headers:  ( Cabeçalhos extras, como location, Authorization etc ...)
+ 3. Body:   ( O objeto que será convertido em JSON/XML para o cliente )
+
+ */
 
 @RestController
 @RequestMapping("/api/v1/produto")
 public class ProdutoController {
 
-    List<Produto> produtos = new ArrayList<Produto>();
+    @Autowired
+    private ProdutoService produtoService;
 
-
-
+    // Lstar todos os produtos
     @GetMapping
-    public List<Produto> findAll() {
+    public ResponseEntity<List<Produto>> listarTodos() {
+        return ResponseEntity.ok(produtoService.findAll());
+    }
 
+    // Salvar Produto
+    public ResponseEntity<Produto> salvarProduto(@RequestBody Produto produto) {
+        Produto novo = produtoService.save(produto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(novo);
+    }
 
-        Produto p1 = new Produto();
+    // Buscar Produto por ID
 
-        p1.setId(1L);
-        p1.setNome("Pizza de Calabresa");
-        p1.setDescricao("Pizza de calabresa com bastante cebola");
-        p1.setValorVenda(49.60);
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> buscarProdutoPorId(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(produtoService.findById(Long.parseLong(id)));
+        }
+        catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "status", 400,
+                            "error", "Bad Request",
+                            "message", "O id informado não é válido: " + id
+                    )
+            );
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(
+                    Map.of(
+                            "status", 404,
+                            "error", "Not Found",
+                            "message", "Produto não encontrado com o id: " + id
+                    )
+            );
+        }
+    }
 
-        Produto p2 = new Produto();
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> atualizarProduto(@PathVariable String id, @RequestBody Produto produto) {
+        try {
+            return ResponseEntity.ok(produtoService.update(Long.parseLong(id), produto));
+        }
+        catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "status", 400,
+                            "error", "Bad Request",
+                            "message", "O id informado não é válido: " + id
+                    )
+            );
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(
+                    Map.of(
+                            "status", 404,
+                            "error", "Not Found",
+                            "message", "Produto não encontrado com o id: " + id
+                    )
+            );
+        }
+    }
 
-        p2.setId(2L);
-        p2.setNome("Pizza de Muçarela");
-        p2.setDescricao("Pizza de muçarela com tomate");
-        p2.setValorVenda(49.60);
-
-
-        produtos.add(p1);
-        produtos.add(p2);
-        return produtos;
-
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Object> excluirProdutoPorId(@PathVariable String id) {
+        try {
+            produtoService.delete(Long.parseLong(id));
+            return ResponseEntity.ok().body(
+                    Map.of(
+                            "status", 200,
+                            "message", "Produto excluido com sucesso: " + id
+                    )
+            );
+        }
+        catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "status", 400,
+                            "error", "Bad Request",
+                            "message", "O id informado não é válido: " + id
+                    )
+            );
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(
+                    Map.of(
+                            "status", 404,
+                            "error", "Not Found",
+                            "message", "Produto não encontrado com o id: " + id
+                    )
+            );
+        }
     }
 
 }
